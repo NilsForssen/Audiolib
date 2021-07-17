@@ -24,8 +24,8 @@
 		[
 			"C:/Users/forss/esp/esp-idf/tools/cmake/component.cmake",
 			"C:/Users/forss/esp/esp-idf/components/ulp/CMakeLists.txt",
-			"C:/Users/forss/esp/esp-idf/components/mbedtls/CMakeLists.txt",
 			"C:/Users/forss/esp/esp-idf/components/esp32/CMakeLists.txt",
+			"C:/Users/forss/esp/esp-idf/components/mbedtls/CMakeLists.txt",
 			"C:/Users/forss/esp/esp-idf/tools/cmake/utilities.cmake"
 		],
 		"nodes" : 
@@ -51,7 +51,7 @@
 			{
 				"command" : 2,
 				"file" : 2,
-				"line" : 43,
+				"line" : 84,
 				"parent" : 3
 			},
 			{
@@ -60,7 +60,7 @@
 			{
 				"command" : 2,
 				"file" : 3,
-				"line" : 84,
+				"line" : 43,
 				"parent" : 5
 			},
 			{
@@ -367,11 +367,11 @@
 	[
 		{
 			"backtrace" : 4,
-			"id" : "custom_bundle::@9d0b8d44c897d31e7973"
+			"id" : "esp32_linker_script::@c361781f7cb51efad0ea"
 		},
 		{
 			"backtrace" : 6,
-			"id" : "esp32_linker_script::@c361781f7cb51efad0ea"
+			"id" : "custom_bundle::@9d0b8d44c897d31e7973"
 		}
 	],
 	"id" : "__idf_ulp::@59f74c71af7e30dd3e55",

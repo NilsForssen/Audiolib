@@ -473,7 +473,7 @@
 				},
 				{
 					"backtrace" : 14,
-					"define" : "PROJECT_VER=\"1\""
+					"define" : "PROJECT_VER=\"c362856-dirty\""
 				}
 			],
 			"includes" : 

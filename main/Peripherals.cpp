@@ -6,7 +6,7 @@ static const adc_bits_width_t width = ADC_WIDTH_BIT_12;
 Potentiometer::Potentiometer(const int min, const int max, update_callback_t update_ntfy)
     : Potentiometer(ADC_UNIT_1, ADC_CHANNEL_1, min, max, update_ntfy) {}
 
-Potentiometer::Potentiometer(const adc_unit_t unit, const adc_channel_t channel, const int min, const int max, udpate_callback_t update_ntfy) 
+Potentiometer::Potentiometer(const adc_unit_t unit, const adc_channel_t channel, const int min, const int max, update_callback_t update_ntfy) 
     : adc_unit(unit), 
     adc_channel(channel), 
     min_raw(min), 

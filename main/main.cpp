@@ -35,16 +35,12 @@ extern "C" {
     
         while (true) {
             //printf("%d\n", pot1->update());
-            printf("&d\n", pot1->update());
+            printf("%d\n", pot1->update());
             printf("%f\n", pot1->get_percent());
             vTaskDelay(pdMS_TO_TICKS(100));
         }
     }
 }
-
-
-void check_potentiometer
-
 
 int sample_pot_percent(const adc1_channel_t* adc_channel, float* pot_val) {
     float adc_val = 0;
