@@ -42,6 +42,7 @@ extern "C" {
     }
 }
 
+
 int sample_pot_percent(const adc1_channel_t* adc_channel, float* pot_val) {
     float adc_val = 0;
     for (int i = 0; i < 100; i++) {

@@ -2,34 +2,34 @@
 	"sources" : 
 	[
 		{
-			"file" : "C:/Users/forss/Documents/Esp32/Audiolib/build/CMakeFiles/bootloader"
+			"file" : "/home/nils/Projects/Audiolib/build/CMakeFiles/bootloader"
 		},
 		{
-			"file" : "C:/Users/forss/Documents/Esp32/Audiolib/build/CMakeFiles/bootloader.rule"
+			"file" : "/home/nils/Projects/Audiolib/build/CMakeFiles/bootloader.rule"
 		},
 		{
-			"file" : "C:/Users/forss/Documents/Esp32/Audiolib/build/CMakeFiles/bootloader-complete.rule"
+			"file" : "/home/nils/Projects/Audiolib/build/CMakeFiles/bootloader-complete.rule"
 		},
 		{
-			"file" : "C:/Users/forss/Documents/Esp32/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule"
+			"file" : "/home/nils/Projects/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule"
 		},
 		{
-			"file" : "C:/Users/forss/Documents/Esp32/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule"
+			"file" : "/home/nils/Projects/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule"
 		},
 		{
-			"file" : "C:/Users/forss/Documents/Esp32/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule"
+			"file" : "/home/nils/Projects/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule"
 		},
 		{
-			"file" : "C:/Users/forss/Documents/Esp32/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule"
+			"file" : "/home/nils/Projects/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule"
 		},
 		{
-			"file" : "C:/Users/forss/Documents/Esp32/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule"
+			"file" : "/home/nils/Projects/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule"
 		},
 		{
-			"file" : "C:/Users/forss/Documents/Esp32/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule"
+			"file" : "/home/nils/Projects/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule"
 		},
 		{
-			"file" : "C:/Users/forss/Documents/Esp32/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule"
+			"file" : "/home/nils/Projects/Audiolib/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule"
 		}
 	],
 	"target" : 

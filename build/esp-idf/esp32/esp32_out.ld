@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: 2021 Espressif Systems (Shanghai) CO LTD
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 /* ESP32 Linker Script Memory Layout
 
    This file describes the memory layout (memory blocks) as virtual
@@ -15,11 +20,8 @@
    to simple macros with numeric values, and/or #if/#endif blocks.
 */
 /*
-
  * Automatically generated file. DO NOT EDIT.
-
  * Espressif IoT Development Framework (ESP-IDF) Configuration Header
-
  */
        
 /* List of deprecated options */
@@ -65,7 +67,7 @@ MEMORY
      Start of RTC slow memory is reserved for ULP co-processor code + data, if enabled.
   */
   rtc_slow_seg(RW) : org = 0x50000000 + 0,
-                                     len = 0x1000 - 0
+                                     len = 0x2000 - 0
   /* external memory ,including data and text */
   extern_ram_seg(RWX) : org = 0x3F800000,
                                      len = 0x400000
@@ -80,3 +82,9 @@ _data_seg_org = ORIGIN(rtc_data_seg);
 REGION_ALIAS("rtc_data_location", rtc_slow_seg );
   REGION_ALIAS("default_code_seg", iram0_2_seg);
   REGION_ALIAS("default_rodata_seg", drom0_0_seg);
+/**
+ *  If rodata default segment is placed in `drom0_0_seg`, then flash's first rodata section must
+ *  also be first in the segment.
+ */
+  ASSERT(_rodata_start == ORIGIN(default_rodata_seg),
+         ".flash.appdesc section must be placed at the beginning of the rodata segment.")

@@ -225,6 +225,9 @@ void Audiolib::a2d_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
     case ESP_A2D_MEDIA_CTRL_ACK_EVT:
         printf("A2D, Media control\n");
         break;
+    case ESP_A2D_PROF_STATE_EVT:
+        printf("A2D, Prof State?");
+        break;
     }
 }
 
