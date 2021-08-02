@@ -5,15 +5,21 @@ void a2d_cb_redirect(esp_a2d_cb_event_t, esp_a2d_cb_param_t *);
 void a2d_data_cb_redirect(const uint8_t *, uint32_t);
 void avrc_cb_redirect(esp_avrc_ct_cb_event_t, esp_avrc_ct_cb_param_t *);
 
-Audiolib::Audiolib(const char *device_name)
+static al_event_cb_param_t sending_param;
+
+static bool sent_title = false;
+static bool sent_artist = false;
+static bool sent_album = false;
+
+Audiolib::Audiolib(const char *device_name, void (*on_change)(al_event_cb_t, al_event_cb_param_t*))
 {
     _devname = device_name;
     Audiolib_redirect = this;
+    this->on_change_cb = on_change;
 }
 
 void Audiolib::start()
 {
-
     nvs_flash_init();
     
     esp_bt_controller_config_t cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
@@ -118,14 +124,31 @@ void Audiolib::avrc_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *par
         {
         case ESP_AVRC_MD_ATTR_TITLE:
             title = text;
+            sent_title = true;
             break;
         case ESP_AVRC_MD_ATTR_ARTIST:
             artist = text;
+            sent_artist = true;
             break;
         case ESP_AVRC_MD_ATTR_ALBUM:
             album = text;
+            sent_album = true;
             break;
         }
+        if (sent_title && sent_artist && sent_album) {
+            sending_param.metadata = {
+            .title = this->title,
+            .artist = this->artist,
+            .album = this->album, 
+            };
+
+            on_change_cb(AL_META_UPDATE, &sending_param);
+
+            sent_title = false;
+            sent_artist = false;
+            sent_album = false;
+        }
+
         break;
     case ESP_AVRC_CT_PLAY_STATUS_RSP_EVT:
         printf("AVRC, Play status\n");
@@ -142,19 +165,18 @@ void Audiolib::avrc_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *par
             printf("AVRC, play status change\n");
             switch(param->change_ntf.event_parameter.playback) {
             case ESP_AVRC_PLAYBACK_STOPPED:
-                playing = false;
                 printf("AVRC, Playback stopped\n");
+                on_change_cb(AL_STOPPED, NULL);
                 break;
             case ESP_AVRC_PLAYBACK_PLAYING:
-                playing = true;
                 printf("AVRC, Playback playing\n");
+                on_change_cb(AL_PLAYING, NULL);
                 break;
             case ESP_AVRC_PLAYBACK_PAUSED:
-                playing = false;
                 printf("AVRC, Playback paused\n");
+                on_change_cb(AL_PAUSED, NULL);
                 break;
             case ESP_AVRC_PLAYBACK_ERROR:
-                playing = false;
                 printf("AVRC, Playback erorr\n");
                 break;
             default:

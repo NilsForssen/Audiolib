@@ -27,18 +27,34 @@ typedef enum {
     PEAK
 } filter_t;
 
+typedef enum {
+    AL_CONNECTED,
+    AL_DISCONNECTED,
+    AL_PLAYING,
+    AL_PAUSED,
+    AL_STOPPED,
+    AL_META_UPDATE
+} al_event_cb_t;
+
+typedef union {
+
+    struct al_meta_update_cb_param_t {
+        char* title;
+        char* artist;
+        char* album;
+    } metadata;
+
+} al_event_cb_param_t;
+
 class Audiolib;
 class Filter;
 struct CombinedChannelFilter;
 
+
+
 class Audiolib {
 public:
-    char* title = (char*)"";
-    char* artist = (char*)"";
-    char* album = (char*)"";
-    bool playing = false;
-
-    Audiolib(const char* device_name);
+    Audiolib(const char* device_name, void (*)(al_event_cb_t, al_event_cb_param_t*));
 
     void start();
     void stop();
@@ -66,6 +82,13 @@ public:
     
 
 private:
+
+    char* title = (char*)"";
+    char* artist = (char*)"";
+    char* album = (char*)"";
+
+    void (*on_change_cb)(al_event_cb_t, al_event_cb_param_t*);
+
     void getMeta();
     uint16_t supportedNotifications = 0x00;
     bool _filtering = true;

@@ -1,8 +1,5 @@
 #include "Peripherals.h"
 
-static const adc_atten_t atten = ADC_ATTEN_DB_0;
-static const adc_bits_width_t width = ADC_WIDTH_BIT_12;
-
 Potentiometer::Potentiometer(const int min, const int max, update_callback_t update_ntfy)
     : Potentiometer(ADC_UNIT_1, ADC_CHANNEL_1, min, max, update_ntfy) {}
 

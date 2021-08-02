@@ -3,8 +3,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
-#include <cmath>
-
+#include "u8g2.h"
+#include "u8g2_esp32_hal.h"
+#include "cstring"
 
 //void updateFilter(const uint8_t, float*, float*, CombinedChannelFilter*);
 Potentiometer* pot1 = new Potentiometer(ADC_UNIT_2, ADC_CHANNEL_5, 70, 1010); //65/66 -> 572/573 -> 1019
@@ -12,18 +13,53 @@ Potentiometer* pot1 = new Potentiometer(ADC_UNIT_2, ADC_CHANNEL_5, 70, 1010); //
 //Potentiometer* pot3 = new Potentiometer(ADC1_CHANNEL_6, 38, 988);
 //Potentiometer* pot4 = new Potentiometer(ADC1_CHANNEL_7, 29, 990);
 
-int sample_pot_percent(const adc1_channel_t*, float*);
-
-Audiolib Audiosource = Audiolib("Bluetooth Speaker");
-
 CombinedChannelFilter* highshelf_filter = new CombinedChannelFilter(new Filter(HIGHSHELF, 2000, 44100, 0.8, 0), new Filter(HIGHSHELF, 2000, 44100, 0.8, 0));
 CombinedChannelFilter* lowshelf_filter = new CombinedChannelFilter(new Filter(LOWSHELF, 250, 44100, 0.8, 0), new Filter(LOWSHELF, 250, 44100, 0.8, 0));
 CombinedChannelFilter* highpass_filter = new CombinedChannelFilter(new Filter(LOWPASS, 8000, 44100, 0.75, 0), new Filter(LOWPASS, 8000, 44100, 0.75, 0));
 CombinedChannelFilter* lowpass_filter = new CombinedChannelFilter(new Filter(HIGHPASS, 60, 44100, 0.75, 0), new Filter(HIGHPASS, 60, 44100, 0.75, 0));
 CombinedChannelFilter* peak_filter = new CombinedChannelFilter(new Filter(PEAK, 700, 44100, 0.8, 0), new Filter(PEAK, 700, 44100, 0.8, 0));
 
+u8g2_t u8g2;
+u8g2_uint_t displayHeight = u8g2_GetDisplayHeight(&u8g2);
+u8g2_uint_t displayWidth = u8g2_GetDisplayWidth(&u8g2);
+
+u8g2_esp32_hal_t u8g2_esp32_hal;
+
+struct timeval tv_now;
+
+static int x;
+static char* text;
+static int textWidth;
+static bool scrolling = false;
+static connected = false;
+
+void scrollText(char*);
+void update_display(al_event_cb_t, al_event_cb_param_t*);
+void draw_string(char* string, int x = 0);
+
+Audiolib Audiosource = Audiolib("Titta vad jag heter", &update_display);
+
 extern "C" {
     void app_main(void){
+
+       
+        u8g2_esp32_hal.sda = GPIO_NUM_32;
+        u8g2_esp32_hal.scl = GPIO_NUM_33;
+        u8g2_esp32_hal_init(u8g2_esp32_hal);
+
+        
+        u8g2_Setup_ssd1306_i2c_128x32_univision_f(
+            &u8g2,
+            U8G2_R0,
+            u8g2_esp32_i2c_byte_cb,
+            u8g2_esp32_gpio_and_delay_cb);
+
+        u8x8_SetI2CAddress(&u8g2.u8x8, 0x3C);
+        u8g2_InitDisplay(&u8g2);
+        u8g2_SetPowerSave(&u8g2, 0);
+        u8g2_SetFont(&u8g2, u8g2_font_ncenR24_tf);
+
+
         Audiosource.set_I2S(26, 27, 25);
 
         Audiosource.add_combined_filter(highpass_filter);
@@ -34,123 +70,110 @@ extern "C" {
         Audiosource.start();
     
         while (true) {
-            //printf("%d\n", pot1->update());
-            printf("%d\n", pot1->update());
-            printf("%f\n", pot1->get_percent());
+            while (connected) {
+
+
+
+
+
+            }
+            draw();
             vTaskDelay(pdMS_TO_TICKS(100));
         }
     }
 }
 
-
-int sample_pot_percent(const adc1_channel_t* adc_channel, float* pot_val) {
-    float adc_val = 0;
-    for (int i = 0; i < 100; i++) {
-        adc_val += adc1_get_raw(*adc_channel);
-    }
-    adc_val = adc_val/100;
-    if (*pot_val == 0) {
-        *pot_val = adc_val;
-    }
-    *pot_val = (adc_val + (9*(*pot_val)) ) / 10;
-
-    printf("%f\n", round(*pot_val) );
-    return 1;
+void draw() {
+    u8g2_ClearBuffer(&u8g2);
+    u8g2_DrawStr(&u8g2, x, 32, text);
+    u8g2_SendBuffer(&ug82);
 }
 
-// void setup()
-// {
-//     pinMode(BUTTON1, INPUT);
-//     pinMode(BUTTON2, INPUT);
-//     pinMode(BUTTON3, INPUT);
+void scrollText(char* text) {
+    u8g2_ClearBuffer(&u8g2);
+    u8g2_DrawStr(&u8g2, x, 32, text);
+    u8g2_SendBuffer(&u8g2);
+    if (x == 0) {
+        vTaskDelay(pdMS_TO_TICKS(990));
+    }
+    
+    if ((textWidth + x) > u8g2_GetDisplayWidth(&u8g2)) {
+        x -= 1; 
+    }
+    
+    else {
+        x = 0;
+        vTaskDelay(pdMS_TO_TICKS(990));
+    }
+    vTaskDelay(pdMS_TO_TICKS(10));
+}
 
-//     analogReadResolution(12);
-//     Serial.begin(115200);
-//     Audiosource.set_I2S(26, 27, 25);
+void update_display(al_event_cb_t event, al_event_cb_param_t* param) {
+    x = 0;
+    switch (event) {
+    case AL_CONNECTED:
+        scrolling = true;
+        text = (char*) "Connected!";
+        printf("AL, Connected\n");
+        connected = true;
+        break;
+    
+    case AL_DISCONNECTED:
+        scrolling = true;
+        text = (char*) "Disconnected!";
+        printf("AL, Disconnected\n");
+        break;
+    
+    case AL_PLAYING:
+        scrolling = false;
+        text = (char*) "PLAY";
+        printf("AL, Playing\n");
+        break;
 
-//     Audiosource.add_combined_filter(highpass_filter);
-//     Audiosource.add_combined_filter(lowshelf_filter);  
-//     Audiosource.add_combined_filter(peak_filter); 
-//     Audiosource.add_combined_filter(highshelf_filter);
-//     Audiosource.add_combined_filter(lowpass_filter);
+    case AL_PAUSED:
+        scrolling = false;
+        text = (char*) "PAUSE";
+        printf("AL, Paused\n");
+        break;
 
-//     Audiosource.start();
-// }
+    case AL_STOPPED:
+        printf("AL, Stopped\n");
+        break;
 
-// void loop()
-// {
-//     currentMillis = millis();
-//     if (currentMillis - previousPotMillis >= potPollInterval)
-//     {
-//         previousPotMillis = currentMillis;
-//         updateFilter(POT1, &pot1val, &filter1gain, highshelf_filter);
-//         updateFilter(POT2, &pot2val, &filter2gain, peak_filter);
-//         updateFilter(POT3, &pot3val, &filter3gain, lowshelf_filter);
-//     }
-//     currentMillis = millis();
-//     if (currentMillis - previousButtonMillis >= buttonPollInterval)
-//     {
-//         previousButtonMillis = currentMillis;
-//         if (digitalRead(BUTTON1))
-//         {
-//             if (!prevButton1)
-//             {
-//                 printf("Start filter\n"); // Button 1
-//                 prevButton1 = true;
-//                 Audiosource.start_filter();
-//             }
-//         }
-//         else
-//         {
-//             prevButton1 = false;
-//         }
-//         if (digitalRead(BUTTON2))
-//         {
-//             if (!prevButton2)
-//             {
-//                 printf("Stop filter\n"); // Button 2
-//                 prevButton2 = true;
-//                 Audiosource.stop_filter();
-//             }
-//         }
-//         else
-//         {
-//             prevButton2 = false;
-//         }
-//         if (digitalRead(BUTTON3))
-//         {
-//             if (!prevButton3)
-//             {
-//                 printf("Button3\n"); // Button 3
-//                 Audiosource.pause();
-//                 printf("%s, %s, %s\n", Audiosource.title, Audiosource.artist, Audiosource.album);
-//                 prevButton3 = true;
-//             }
-//         }
-//         else
-//         {
-//             prevButton3 = false;
-//         }
-//     }
-// }
+    case AL_META_UPDATE:
+        scrolling = true;
 
-// void updateFilter(const adc_channel_t adc_channel, float* potVal, float* prevGain, CombinedChannelFilter* filter)
-// {   
-//     *potVal = ((float(adc1_get_raw(adc_channel_1) adc_channel) * 20.00002 / 4095) - 10.00001 + (4*(*potVal))) / 5;
+        int titleLen = strlen(param->metadata.title);
+        int artistLen = strlen(param->metadata.artist);
 
-//     printf
+        text = (char*) malloc(titleLen + artistLen + 3 + 1);        //Maybe runaway pointer every time this is done?
+        memcpy(text, param->metadata.title, titleLen);
+        memcpy(text + titleLen, (char*)" - ", 3);
+        memcpy(text + titleLen + 3, param->metadata.artist, artistLen);
+        *(text + titleLen + 3 + artistLen) = *"\0";
 
-//     if (!int(((fabs(*potVal)) * 2) + 0.75) * ((*potVal > 0) - (*potVal < 0))){
-//         if (*prevGain != 0){
-//             *prevGain = 0;
-//             filter->update(*prevGain);
-//         }
-//         return;
-//     }
-//     float diff = fabs(*potVal) - fabs(*prevGain);
-//     if (diff >= gainStep || diff <= -gainStep) {
-//         *prevGain = float(int(((fabs(*potVal)) * 2) + 0.5)) / 2 * ((*potVal > 0) - (*potVal < 0));
-//         filter->update(*prevGain);
-//         return;
-//     }
-// }
+        textWidth = u8g2_GetUTF8Width(&u8g2, text);
+        printf("%d\n", textWidth);
+        printf("%s\n", text);
+
+        printf("AL, Meta_Update\n");
+        break;
+    }
+}
+
+
+/*
+int substr(char* string, int startPixel, int totPixels) {
+
+    int len = strlen(strin);
+    int newlen = (int) len/2;
+
+    char* newstr = (char*) malloc(newlen + 1);
+    memcpy(newstr, &str[start], newlen);
+    newstr[newlen] = *"\0";
+
+
+    if (pixels > u8g2_GetUTF8Width((int) len/2)
+    for (int i = 0; i < strlen(string))
+    
+}*/
