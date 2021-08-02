@@ -128,7 +128,7 @@ uint8_t u8g2_esp32_i2c_byte_cb(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void 
 		    conf.scl_pullup_en = GPIO_PULLUP_DISABLE;                   // External pull-up required, 3K3 for Vcc=3.3V
 		    ESP_LOGI(TAG, "clk_speed %d", I2C_MASTER_FREQ_HZ);
 		    conf.master.clk_speed = I2C_MASTER_FREQ_HZ;
-		    ESP_LOGI(TAG, "clk_flags 0x%X", conf.clk_flags);
+		    //ESP_LOGI(TAG, "clk_flags 0x%X", conf.clk_flags);
 		    ESP_LOGI(TAG, "i2c_param_config %d", conf.mode);
 		    ESP_ERROR_CHECK(i2c_param_config(I2C_MASTER_NUM, &conf));
 		    ESP_LOGI(TAG, "i2c_driver_install for I2C bus %d", I2C_MASTER_NUM);

@@ -31,11 +31,11 @@ static int x;
 static char* text;
 static int textWidth;
 static bool scrolling = false;
-static connected = false;
+static bool connected = false;
 
 void scrollText(char*);
 void update_display(al_event_cb_t, al_event_cb_param_t*);
-void draw_string(char* string, int x = 0);
+void draw();
 
 Audiolib Audiosource = Audiolib("Titta vad jag heter", &update_display);
 
@@ -86,7 +86,7 @@ extern "C" {
 void draw() {
     u8g2_ClearBuffer(&u8g2);
     u8g2_DrawStr(&u8g2, x, 32, text);
-    u8g2_SendBuffer(&ug82);
+    u8g2_SendBuffer(&u8g2);
 }
 
 void scrollText(char* text) {
