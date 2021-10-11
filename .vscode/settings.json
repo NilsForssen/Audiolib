@@ -13,6 +13,7 @@
     "files.associations": {
         "chrono": "cpp",
         "random": "cpp",
-        "limits": "cpp"
+        "limits": "cpp",
+        "bt_font.c": "cpp"
     }
 }
