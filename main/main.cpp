@@ -74,7 +74,7 @@ extern "C" {
 
         while (true) {
             draw();
-            printf("%d\n", pot1->get_raw());
+            //printf("%d\n", pot1->get_raw());
             vTaskDelay(pdMS_TO_TICKS(10));
         }
     }
