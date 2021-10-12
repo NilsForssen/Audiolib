@@ -5,7 +5,6 @@
 #include "driver/gpio.h"
 #include "u8g2.h"
 #include "u8g2_esp32_hal.h"
-#include "cstring"
 #include "BT_font.c"
 
 enum StatusBM {
