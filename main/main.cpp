@@ -2,10 +2,20 @@
 #include "Peripherals.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 #include "driver/gpio.h"
+#include "driver/timer.h"
 #include "u8g2.h"
 #include "u8g2_esp32_hal.h"
 #include "BT_font.c"
+
+#define TIMER_DIVIDER 16
+#define TIMER_SCALE (TIMER_BASE_CLK / TIMER_DIVIDER)
+#define INPUT_TIMER TIMER_0
+#define DISPLAY_TIMER TIMER_1
+
+#define SCREENWIDTH 128
+#define SCREENHEIGHT 32
 
 enum StatusBM {
     BT = 1,
@@ -14,18 +24,40 @@ enum StatusBM {
     PAUSE = 8
 };
 
+enum eventBM {
+    DISPLAY = 1,
+    INPUT = 2,
+};
+
+
+timer_config_t timer_config = {
+    .alarm_en = TIMER_ALARM_EN,
+    .counter_en = TIMER_PAUSE,
+    .counter_dir = TIMER_COUNT_UP,
+    .auto_reload = TIMER_AUTORELOAD_EN,
+    .divider = TIMER_DIVIDER,
+};
+
 u8g2_t u8g2;
 u8g2_esp32_hal_t u8g2_esp32_hal;
 
 char* titleText = (char*) "";
 char* artistText = (char*) "";
 
-int displayStatus = 0;
-int SCREENHEIGHT;
-int SCREENWIDTH;
+xQueueHandle event_queue;
+
+int8_t displayStatus = 0;
+int8_t event = 0;
+
+double input_timer_interval = 0.01; // seconds
+double display_timer_interval = 0.1; // seconds
+int x = 0;
 
 void update_display(al_event_cb_t, al_event_cb_param_t*);
 void draw();
+void thisfunc();
+bool IRAM_ATTR input_timer_cb(void* args);
+bool IRAM_ATTR display_timer_cb(void* args);
 
 
 Audiolib Audiosource = Audiolib("HESA FREDRIK", &update_display);
@@ -45,42 +77,64 @@ CombinedChannelFilter* peak_filter = new CombinedChannelFilter(new Filter(PEAK, 
 extern "C" {
     void app_main(void){
 
+        // -------------- U8G2 Setup --------------
         u8g2_esp32_hal.sda = GPIO_NUM_32;
         u8g2_esp32_hal.scl = GPIO_NUM_33;
         u8g2_esp32_hal_init(u8g2_esp32_hal);
-
         u8g2_Setup_ssd1306_i2c_128x32_univision_f(
             &u8g2,
             U8G2_R0,
             u8g2_esp32_i2c_byte_cb,
             u8g2_esp32_gpio_and_delay_cb);
-
         u8x8_SetI2CAddress(&u8g2.u8x8, 0x3C);
         u8g2_InitDisplay(&u8g2);
         u8g2_SetPowerSave(&u8g2, 0);
         u8g2_SetFont(&u8g2, BT_FONT);
+        // ----------------------------------------
 
-        SCREENWIDTH = u8g2_GetDisplayWidth(&u8g2);
-        SCREENHEIGHT = u8g2_GetDisplayHeight(&u8g2);
+        event_queue = xQueueCreate(10, 1);
 
+        // -------------- Audiosource Setup --------------
         Audiosource.set_I2S(26, 27, 25);
-
         Audiosource.add_combined_filter(highpass_filter);
         Audiosource.add_combined_filter(lowshelf_filter);  
         Audiosource.add_combined_filter(peak_filter); 
         Audiosource.add_combined_filter(highshelf_filter);
         Audiosource.add_combined_filter(lowpass_filter);
         Audiosource.start();
+        // -----------------------------------------------
 
+        // -------------- Timer Setup --------------
+        timer_init(TIMER_GROUP_0, INPUT_TIMER, &timer_config);
+        timer_set_counter_value(TIMER_GROUP_0, INPUT_TIMER, 0);
+        timer_set_alarm_value(TIMER_GROUP_0, INPUT_TIMER, input_timer_interval * TIMER_SCALE);
+        timer_enable_intr(TIMER_GROUP_0, INPUT_TIMER);
+        timer_isr_callback_add(TIMER_GROUP_0, INPUT_TIMER, &input_timer_cb, nullptr, 0);
+    
+        timer_init(TIMER_GROUP_0, DISPLAY_TIMER, &timer_config);
+        timer_set_counter_value(TIMER_GROUP_0, DISPLAY_TIMER, 0);
+        timer_set_alarm_value(TIMER_GROUP_0, DISPLAY_TIMER, display_timer_interval * TIMER_SCALE);
+        timer_enable_intr(TIMER_GROUP_0, DISPLAY_TIMER);
+        timer_isr_callback_add(TIMER_GROUP_0, DISPLAY_TIMER, &display_timer_cb, nullptr, 0);
+
+        timer_start(TIMER_GROUP_0, INPUT_TIMER);
+        timer_start(TIMER_GROUP_0, DISPLAY_TIMER);
+        // -----------------------------------------
+
+        // Main loop
         while (true) {
-            draw();
-            //printf("%d\n", pot1->get_raw());
-            vTaskDelay(pdMS_TO_TICKS(10));
+            xQueueReceive(event_queue, &event, portMAX_DELAY);
+            if (event & DISPLAY) {
+                draw();
+            }
+
+            
+
         }
     }
 }
 
-void draw() {
+void IRAM_ATTR draw() {
     if (displayStatus & BT) {
         u8g2_DrawGlyph(&u8g2, 0, SCREENHEIGHT/2, 127);
     }
@@ -95,7 +149,9 @@ void draw() {
     }
     if ((displayStatus & PLAY) || (displayStatus & STOP) || (displayStatus & PAUSE)) {
         u8g2_DrawStr(&u8g2, 23, SCREENHEIGHT/2, artistText);
-        u8g2_DrawStr(&u8g2, 0, SCREENHEIGHT, titleText);
+        u8g2_DrawStr(&u8g2, x, SCREENHEIGHT, titleText);
+        x += 1;
+        if (x == SCREENWIDTH) x = 0;
     }
     else {
         u8g2_DrawStr(&u8g2, 0, SCREENHEIGHT/2, "Disconnected!");
@@ -141,4 +197,18 @@ void update_display(al_event_cb_t event, al_event_cb_param_t* param) {
         printf("AL, Meta_Update\n");
         break;
     }
+}
+
+bool input_timer_cb(void* args) {
+    int8_t msg = INPUT;
+    BaseType_t high_task_awoken = pdFALSE;
+    xQueueSendFromISR(event_queue, &msg, &high_task_awoken);
+    return high_task_awoken == pdTRUE;
+}
+
+bool display_timer_cb(void* args) {
+    int8_t msg = DISPLAY;
+    BaseType_t high_task_awoken = pdFALSE;
+    xQueueSendFromISR(event_queue, &msg, &high_task_awoken);
+    return high_task_awoken == pdTRUE;
 }
