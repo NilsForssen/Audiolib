@@ -1,9 +1,27 @@
 #include "Peripherals.h"
 
-Potentiometer::Potentiometer(const int min, const int max, update_callback_t update_ntfy)
+gpio_config_t btn_config = {
+    .pin_bit_mask = (uint64_t) 0,
+    .mode = GPIO_MODE_INPUT,
+    .pull_up_en = GPIO_PULLUP_DISABLE,
+    .pull_down_en = GPIO_PULLDOWN_ENABLE,
+    .intr_type = GPIO_INTR_ANYEDGE
+};
+
+static void btn_isr_handler(void*);
+
+void btn_isr_handler(void *args) {
+    Button* obj = (Button*) args;
+    if (obj->on_change != NULL) {
+        bool state = obj->getPressed();
+        (*obj->on_change)(state);
+    }
+}
+
+Potentiometer::Potentiometer(const int min, const int max, pot_update_callback_t update_ntfy)
     : Potentiometer(ADC_UNIT_1, ADC_CHANNEL_1, min, max, update_ntfy) {}
 
-Potentiometer::Potentiometer(const adc_unit_t unit, const adc_channel_t channel, const int min, const int max, update_callback_t update_ntfy) 
+Potentiometer::Potentiometer(const adc_unit_t unit, const adc_channel_t channel, const int min, const int max, pot_update_callback_t update_ntfy) 
     : adc_unit(unit), 
     adc_channel(channel), 
     min_raw(min), 
@@ -87,4 +105,26 @@ int Potentiometer::update() {
 float Potentiometer::get_percent() {
     int raw = get_raw();
     return ((float)raw / (4096)) * 100;
+}
+
+Button::Button(gpio_num_t gpio_pin, btn_update_callback_t update_ntfy)
+ : on_change(update_ntfy),
+ gpio_pin(gpio_pin) {
+    gpio_config_t config = btn_config;
+    config.pin_bit_mask = (1 << gpio_pin);
+    gpio_config(&config);
+
+    // static esp_err_t isr_service_init = gpio_install_isr_service(0);
+    // gpio_isr_handler_add(gpio_pin, btn_isr_handler, this);
+}
+
+bool Button::getPressed() {
+    return (bool) gpio_get_level(gpio_pin);
+}
+
+bool Button::getPressedSingle() {
+    bool state = (bool) gpio_get_level(gpio_pin);
+    bool ret = state && !lastState;
+    lastState = state;
+    return ret;
 }

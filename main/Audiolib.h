@@ -113,7 +113,7 @@ public:
         fout = fin * _b0 + _z1;
         _z1 = fin * _b1 + _z2 - _a1 * fout;
         _z2 = fin * _b2 - _a2 * fout;
-        return (in_out_type) fout;
+        return (in_out_type) fout * volume;
     }
     void update(float peakgain);
 
@@ -123,6 +123,7 @@ private:
     float _b0, _b1, _b2, _a1, _a2;
     float _z1 = 0, _z2 = 0;
     float _k, _q;
+    float volume = 1.0;
     
 };
 
