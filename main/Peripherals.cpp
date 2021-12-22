@@ -8,16 +8,6 @@ gpio_config_t btn_config = {
     .intr_type = GPIO_INTR_ANYEDGE
 };
 
-static void btn_isr_handler(void*);
-
-void btn_isr_handler(void *args) {
-    Button* obj = (Button*) args;
-    if (obj->on_change != NULL) {
-        bool state = obj->getPressed();
-        (*obj->on_change)(state);
-    }
-}
-
 Potentiometer::Potentiometer(const int min, const int max, pot_update_callback_t update_ntfy)
     : Potentiometer(ADC_UNIT_1, ADC_CHANNEL_1, min, max, update_ntfy) {}
 

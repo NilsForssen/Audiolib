@@ -109,14 +109,19 @@ void Audiolib::avrc_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *par
     switch (event)
     {
     case ESP_AVRC_CT_CONNECTION_STATE_EVT:
+
         printf("AVRC, Connection state\n");
         esp_avrc_ct_send_get_rn_capabilities_cmd(0);
         getMeta();
         break;
+
     case ESP_AVRC_CT_PASSTHROUGH_RSP_EVT:
+
         printf("AVRC, Passthrough\n");
         break;
+
     case ESP_AVRC_CT_METADATA_RSP_EVT:
+
         printf("AVRC, Metadata response\n");
         text = (char *)calloc(param->meta_rsp.attr_length + 1, sizeof(char));
         memcpy(text, param->meta_rsp.attr_text, param->meta_rsp.attr_length);
@@ -141,65 +146,114 @@ void Audiolib::avrc_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *par
             .artist = this->artist,
             .album = this->album, 
             };
-
             on_change_cb(AL_META_UPDATE, &sending_param);
-
             sent_title = false;
             sent_artist = false;
             sent_album = false;
         }
-
         break;
+
     case ESP_AVRC_CT_PLAY_STATUS_RSP_EVT:
+
         printf("AVRC, Play status\n");
         break;
+
     case ESP_AVRC_CT_CHANGE_NOTIFY_EVT:
-        switch(param->change_ntf.event_id) {
+
+        switch(param->change_ntf.event_id)
+        {
         case ESP_AVRC_RN_TRACK_CHANGE:
-            printf("AVRC, track change\n");
-            printf("AVRC, Sent request for meta and track change\n");
+
+            printf("AVRC NTFY, track change\n");
             getMeta();
             esp_avrc_ct_send_register_notification_cmd(0, ESP_AVRC_RN_TRACK_CHANGE, 0);
             break;
+
         case ESP_AVRC_RN_PLAY_STATUS_CHANGE:
-            printf("AVRC, play status change\n");
+
+            printf("AVRC NTFY, play status change\n");
+            esp_avrc_ct_send_register_notification_cmd(0, ESP_AVRC_RN_PLAY_STATUS_CHANGE, 0);
+
             switch(param->change_ntf.event_parameter.playback) {
             case ESP_AVRC_PLAYBACK_STOPPED:
-                printf("AVRC, Playback stopped\n");
+                printf("Playback stopped\n");
                 on_change_cb(AL_STOPPED, NULL);
                 break;
             case ESP_AVRC_PLAYBACK_PLAYING:
-                printf("AVRC, Playback playing\n");
+                printf("Playback playing\n");
                 on_change_cb(AL_PLAYING, NULL);
                 break;
             case ESP_AVRC_PLAYBACK_PAUSED:
-                printf("AVRC, Playback paused\n");
+                printf("Playback paused\n");
                 on_change_cb(AL_PAUSED, NULL);
                 break;
             case ESP_AVRC_PLAYBACK_ERROR:
-                printf("AVRC, Playback erorr\n");
+                printf("Playback erorr\n");
                 break;
             default:
-                printf("AVRC, Default playback case\n");
+                printf("Default playback case\n");
                 break;
             }
-            printf("Sent request for play status change\n");
-            esp_avrc_ct_send_register_notification_cmd(0, ESP_AVRC_RN_PLAY_STATUS_CHANGE, 0);
             break;
+
+        case ESP_AVRC_RN_BATTERY_STATUS_CHANGE:
+
+            printf("AVRC NTFY, Battery Change\n");
+            esp_avrc_ct_send_register_notification_cmd(0, ESP_AVRC_RN_BATTERY_STATUS_CHANGE, 0);
+
+            switch(param->change_ntf.event_parameter.batt) {
+            case ESP_AVRC_BATT_NORMAL:
+                printf("Battery Normal\n");
+                break;
+            case ESP_AVRC_BATT_WARNING:
+                printf("Battery Warning\n");
+                break;
+            case ESP_AVRC_BATT_EXTERNAL:
+                printf("Battery External\n");
+                break;
+            case ESP_AVRC_BATT_FULL_CHARGE:
+                printf("Battery Full Charge\n");
+                break;
+            case ESP_AVRC_BATT_CRITICAL:
+                printf("Battery Critical\n");
+                break;
+            }
+            break;
+
+        case ESP_AVRC_RN_VOLUME_CHANGE:
+
+            printf("AVRC NTFY, Volume Change");
+            esp_avrc_ct_send_register_notification_cmd(0, ESP_AVRC_RN_VOLUME_CHANGE, 0);
+            break;
+
+        default: 
+
+            printf("AVRC NTFY, Default change notify");
+            break;
+
         }
         break;
+
     case ESP_AVRC_CT_REMOTE_FEATURES_EVT:
+
         printf("AVRC, Remote features\n");
         break;
+
     case ESP_AVRC_CT_GET_RN_CAPABILITIES_RSP_EVT:
+
         printf("AVRC, RN capabilities\n");
         printf("Sent requests\n");
         esp_avrc_ct_send_register_notification_cmd(0, ESP_AVRC_RN_TRACK_CHANGE, 0);
         esp_avrc_ct_send_register_notification_cmd(1, ESP_AVRC_RN_PLAY_STATUS_CHANGE, 0);
+        esp_avrc_ct_send_register_notification_cmd(2, ESP_AVRC_RN_VOLUME_CHANGE, 0);
+        esp_avrc_ct_send_register_notification_cmd(3, ESP_AVRC_RN_BATTERY_STATUS_CHANGE, 0);
         break;
+
     default:
+
         printf("AVRC, Default case\n");
         break;
+
     }
 }
 
@@ -346,6 +400,11 @@ void Audiolib::stop_filter()
 {
     _filtering = false;
 }
+
+void Audiolib::setAbsVolume(uint8_t vol) {
+    esp_avrc_ct_send_set_absolute_volume_cmd(0, vol);
+}
+
 Filter::Filter(filter_t type, uint16_t freq, uint16_t sample_rate, float Q, float peakgain)
 {
     _sample_rate = sample_rate;

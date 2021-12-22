@@ -79,6 +79,8 @@ public:
     void play();
     void next();
     void previous();
+
+    void setAbsVolume(uint8_t vol);
     
 
 private:
