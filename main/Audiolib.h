@@ -14,6 +14,7 @@
 #include "cstring"
 #include "algorithm"
 #include "nvs_flash.h"
+#include "esp_log.h"
 
 #define ROOT2 1.4142135623730950488016887242097
 #define PI 3.1415926535897932384626433832796

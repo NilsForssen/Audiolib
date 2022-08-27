@@ -103,9 +103,6 @@ Button::Button(gpio_num_t gpio_pin, btn_update_callback_t update_ntfy)
     gpio_config_t config = btn_config;
     config.pin_bit_mask = (1 << gpio_pin);
     gpio_config(&config);
-
-    // static esp_err_t isr_service_init = gpio_install_isr_service(0);
-    // gpio_isr_handler_add(gpio_pin, btn_isr_handler, this);
 }
 
 bool Button::getPressed() {

@@ -5,6 +5,13 @@ void a2d_cb_redirect(esp_a2d_cb_event_t, esp_a2d_cb_param_t *);
 void a2d_data_cb_redirect(const uint8_t *, uint32_t);
 void avrc_cb_redirect(esp_avrc_ct_cb_event_t, esp_avrc_ct_cb_param_t *);
 
+static const char *AVRC_TAG = "Audiolib [AVRC]" ;
+static const char *AVRC_NTFY_TAG = "Audiolib [AVRC_NTFY]";
+static const char *AVRC_PLAYBACK_TAG = "Audiolib [AVRC_PLAYBACK]";
+static const char *AVRC_BATTERY_TAG = "Audiolib [AVRC_BATTERY]";
+static const char *A2D_TAG = "Audiolib [A2D]";
+
+
 static al_event_cb_param_t sending_param;
 
 static bool sent_title = false;
@@ -80,7 +87,6 @@ void Audiolib::set_I2S(const int bit_clock_pin, const int word_select_pin, const
 
 void Audiolib::getMeta()
 {
-    esp_avrc_ct_send_metadata_cmd(0, ESP_AVRC_MD_ATTR_TITLE | ESP_AVRC_MD_ATTR_ARTIST | ESP_AVRC_MD_ATTR_ALBUM);
 }
 
 void Audiolib::play() {
@@ -110,19 +116,19 @@ void Audiolib::avrc_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *par
     {
     case ESP_AVRC_CT_CONNECTION_STATE_EVT:
 
-        printf("AVRC, Connection state\n");
+        ESP_LOGI(AVRC_TAG, "Connection state");
         esp_avrc_ct_send_get_rn_capabilities_cmd(0);
-        getMeta();
+        esp_avrc_ct_send_metadata_cmd(1, ESP_AVRC_MD_ATTR_TITLE | ESP_AVRC_MD_ATTR_ARTIST | ESP_AVRC_MD_ATTR_ALBUM);
         break;
 
     case ESP_AVRC_CT_PASSTHROUGH_RSP_EVT:
 
-        printf("AVRC, Passthrough\n");
+        ESP_LOGI(AVRC_TAG, "Passthrough");
         break;
 
     case ESP_AVRC_CT_METADATA_RSP_EVT:
 
-        printf("AVRC, Metadata response\n");
+        ESP_LOGI(AVRC_TAG, "Metadata response");
         text = (char *)calloc(param->meta_rsp.attr_length + 1, sizeof(char));
         memcpy(text, param->meta_rsp.attr_text, param->meta_rsp.attr_length);
         switch (param->meta_rsp.attr_id)
@@ -155,7 +161,7 @@ void Audiolib::avrc_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *par
 
     case ESP_AVRC_CT_PLAY_STATUS_RSP_EVT:
 
-        printf("AVRC, Play status\n");
+        ESP_LOGI(AVRC_TAG, "Play status");
         break;
 
     case ESP_AVRC_CT_CHANGE_NOTIFY_EVT:
@@ -164,71 +170,71 @@ void Audiolib::avrc_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *par
         {
         case ESP_AVRC_RN_TRACK_CHANGE:
 
-            printf("AVRC NTFY, track change\n");
-            getMeta();
+            ESP_LOGI(AVRC_NTFY_TAG, "Track change");
             esp_avrc_ct_send_register_notification_cmd(0, ESP_AVRC_RN_TRACK_CHANGE, 0);
+            esp_avrc_ct_send_metadata_cmd(1, ESP_AVRC_MD_ATTR_TITLE | ESP_AVRC_MD_ATTR_ARTIST | ESP_AVRC_MD_ATTR_ALBUM);
             break;
 
         case ESP_AVRC_RN_PLAY_STATUS_CHANGE:
 
-            printf("AVRC NTFY, play status change\n");
+            ESP_LOGI(AVRC_NTFY_TAG, "Play status change");
             esp_avrc_ct_send_register_notification_cmd(0, ESP_AVRC_RN_PLAY_STATUS_CHANGE, 0);
 
             switch(param->change_ntf.event_parameter.playback) {
             case ESP_AVRC_PLAYBACK_STOPPED:
-                printf("Playback stopped\n");
+                ESP_LOGI(AVRC_PLAYBACK_TAG, "Playback stopped");
                 on_change_cb(AL_STOPPED, NULL);
                 break;
             case ESP_AVRC_PLAYBACK_PLAYING:
-                printf("Playback playing\n");
+                ESP_LOGI(AVRC_PLAYBACK_TAG, "Playback playing");
                 on_change_cb(AL_PLAYING, NULL);
                 break;
             case ESP_AVRC_PLAYBACK_PAUSED:
-                printf("Playback paused\n");
+                ESP_LOGI(AVRC_PLAYBACK_TAG, "Playback paused");
                 on_change_cb(AL_PAUSED, NULL);
                 break;
             case ESP_AVRC_PLAYBACK_ERROR:
-                printf("Playback erorr\n");
+                ESP_LOGI(AVRC_PLAYBACK_TAG, "Playback erorr");
                 break;
             default:
-                printf("Default playback case\n");
+                ESP_LOGI(AVRC_PLAYBACK_TAG, "Default playback case");
                 break;
             }
             break;
 
         case ESP_AVRC_RN_BATTERY_STATUS_CHANGE:
 
-            printf("AVRC NTFY, Battery Change\n");
+            ESP_LOGI(AVRC_NTFY_TAG, "Battery Change");
             esp_avrc_ct_send_register_notification_cmd(0, ESP_AVRC_RN_BATTERY_STATUS_CHANGE, 0);
 
             switch(param->change_ntf.event_parameter.batt) {
             case ESP_AVRC_BATT_NORMAL:
-                printf("Battery Normal\n");
+                ESP_LOGI(AVRC_BATTERY_TAG, "Battery Normal");
                 break;
             case ESP_AVRC_BATT_WARNING:
-                printf("Battery Warning\n");
+                ESP_LOGI(AVRC_BATTERY_TAG, "Battery Warning");
                 break;
             case ESP_AVRC_BATT_EXTERNAL:
-                printf("Battery External\n");
+                ESP_LOGI(AVRC_BATTERY_TAG, "Battery External");
                 break;
             case ESP_AVRC_BATT_FULL_CHARGE:
-                printf("Battery Full Charge\n");
+                ESP_LOGI(AVRC_BATTERY_TAG, "Battery Full Charge");
                 break;
             case ESP_AVRC_BATT_CRITICAL:
-                printf("Battery Critical\n");
+                ESP_LOGI(AVRC_BATTERY_TAG, "Battery Critical");
                 break;
             }
             break;
 
         case ESP_AVRC_RN_VOLUME_CHANGE:
 
-            printf("AVRC NTFY, Volume Change");
+            ESP_LOGI(AVRC_NTFY_TAG, "Volume Change");
             esp_avrc_ct_send_register_notification_cmd(0, ESP_AVRC_RN_VOLUME_CHANGE, 0);
             break;
 
         default: 
 
-            printf("AVRC NTFY, Default change notify");
+            ESP_LOGW(AVRC_NTFY_TAG, "Default change notify");
             break;
 
         }
@@ -236,13 +242,13 @@ void Audiolib::avrc_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *par
 
     case ESP_AVRC_CT_REMOTE_FEATURES_EVT:
 
-        printf("AVRC, Remote features\n");
+        ESP_LOGI(AVRC_TAG, "Remote features");
         break;
 
     case ESP_AVRC_CT_GET_RN_CAPABILITIES_RSP_EVT:
 
-        printf("AVRC, RN capabilities\n");
-        printf("Sent requests\n");
+        ESP_LOGI(AVRC_TAG, "RN capabilities");
+        ESP_LOGI(AVRC_TAG, "Sent requests");
         esp_avrc_ct_send_register_notification_cmd(0, ESP_AVRC_RN_TRACK_CHANGE, 0);
         esp_avrc_ct_send_register_notification_cmd(1, ESP_AVRC_RN_PLAY_STATUS_CHANGE, 0);
         esp_avrc_ct_send_register_notification_cmd(2, ESP_AVRC_RN_VOLUME_CHANGE, 0);
@@ -251,7 +257,7 @@ void Audiolib::avrc_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *par
 
     default:
 
-        printf("AVRC, Default case\n");
+        ESP_LOGI(AVRC_TAG, "Default case");
         break;
 
     }
@@ -269,40 +275,40 @@ void Audiolib::a2d_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
             {
                 _adr[i] = *(param->conn_stat.remote_bda + i);
             }
-            printf("A2D, Connected with adress set\n");
+            ESP_LOGI(A2D_TAG, "Connected with adress set");
             break;
         case ESP_A2D_CONNECTION_STATE_DISCONNECTED:
-            printf("A2D, Disconnected\n");
+            ESP_LOGI(A2D_TAG, "Disconnected");
             break;
         case ESP_A2D_CONNECTION_STATE_DISCONNECTING:
-            printf("A2D, Disconnecting\n");
+            ESP_LOGI(A2D_TAG, "Disconnecting");
             break;
         case ESP_A2D_CONNECTION_STATE_CONNECTING:
-            printf("A2D, Connecting\n");
+            ESP_LOGI(A2D_TAG, "Connecting");
             break;
         }
         break;
     case ESP_A2D_AUDIO_STATE_EVT:
         switch(param->audio_stat.state){
         case ESP_A2D_AUDIO_STATE_REMOTE_SUSPEND:
-            printf("A2D, Audio state suspended\n");
+            ESP_LOGI(A2D_TAG, "Audio state suspended");
             break;
         case ESP_A2D_AUDIO_STATE_STOPPED:
-            printf("A2D, Audio state stopped\n");
+            ESP_LOGI(A2D_TAG, "Audio state stopped");
             break;
         case ESP_A2D_AUDIO_STATE_STARTED:
-            printf("A2D, Audio state started\n");
+            ESP_LOGI(A2D_TAG, "Audio state started");
             break;
         }
         break;
     case ESP_A2D_AUDIO_CFG_EVT:
-        printf("A2D, Audio config\n");
+        ESP_LOGI(A2D_TAG, "Audio config");
         break;
     case ESP_A2D_MEDIA_CTRL_ACK_EVT:
-        printf("A2D, Media control\n");
+        ESP_LOGI(A2D_TAG, "Media control");
         break;
     default:
-        printf("A2D, Default catch\n");
+        ESP_LOGI(A2D_TAG, "Default catch");
         break;
     }
 }
