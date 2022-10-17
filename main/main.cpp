@@ -40,7 +40,8 @@ enum StatusBM {
     BT = 1,
     PLAY = 2,
     STOP = 4,
-    PAUSE = 8
+    PAUSE = 8,
+    METADATA = 16
 };
 enum eventBM {
     DISPLAY = 1,
@@ -66,10 +67,13 @@ xQueueHandle event_queue;
 // -------------- Global tracking vars --------------
 char* titleText = (char*) "";
 char* artistText = (char*) "";
+uint8_t titleWidth = 0; 
+uint8_t artistWidth = 0;
 
-int8_t displayStatus = 0;
-int8_t event = 0;
-int x = 0;
+uint8_t displayStatus = 0;
+uint8_t event = 0;
+int16_t title_x = 0;
+int16_t artist_x = 0;
 // --------------------------------------------------
 
 // -------------- Function definitions --------------
@@ -80,7 +84,7 @@ bool IRAM_ATTR display_timer_cb(void* args);
 // --------------------------------------------------
 
 // -------------- Object definitions --------------
-Audiolib Audiosource = Audiolib("HESA FREDRIK", &update_display);
+Audiolib Audiosource = Audiolib("HESA PETTER", &update_display);
 
 //Potentiometer* pot1 = new Potentiometer(ADC_UNIT_2, POT1_CHANNEL, 70, 1010); //65/66 -> 572/573 -> 1019
 //Potentiometer* pot2 = new Potentiometer(ADC1_CHANNEL_4, 41, 988);
@@ -174,26 +178,32 @@ extern "C" {
 void draw() {
     if (displayStatus & BT) {
         u8g2_DrawGlyph(&u8g2, 0, SCREEN_HEIGHT/2, 127);
-    }
-    if (displayStatus & STOP) {
-        u8g2_DrawGlyph(&u8g2, 12, SCREEN_HEIGHT/2, 129);
-    }
-    else if (displayStatus & PAUSE) {
-        u8g2_DrawGlyph(&u8g2, 12, SCREEN_HEIGHT/2, 130);
-    }
-    else if (displayStatus & PLAY) {
-        u8g2_DrawGlyph(&u8g2, 12, SCREEN_HEIGHT/2, 128);
-    }
-    if ((displayStatus & PLAY) || (displayStatus & STOP) || (displayStatus & PAUSE)) {
-        u8g2_DrawStr(&u8g2, 23, SCREEN_HEIGHT/2, artistText);
-        u8g2_DrawStr(&u8g2, x, SCREEN_HEIGHT, titleText);
-        x -= 1;
-        if (x == -SCREEN_WIDTH) x = 0;
+
+        if (displayStatus & STOP) {
+            u8g2_DrawGlyph(&u8g2, 12, SCREEN_HEIGHT/2, 129);
+        }
+        else if (displayStatus & PAUSE) {
+            u8g2_DrawGlyph(&u8g2, 12, SCREEN_HEIGHT/2, 130);
+        }
+        else if (displayStatus & PLAY) {
+            u8g2_DrawGlyph(&u8g2, 12, SCREEN_HEIGHT/2, 128);
+        }
+        
+        if (displayStatus & METADATA) {
+            u8g2_DrawStr(&u8g2, 23, SCREEN_HEIGHT/2, artistText);
+            u8g2_DrawStr(&u8g2, title_x, SCREEN_HEIGHT, titleText);
+            title_x -= 1;
+            if (title_x == -SCREEN_WIDTH) title_x = 0;
+        }
+        else {
+            u8g2_DrawStr(&u8g2, 23, SCREEN_HEIGHT/2, "Connected!");
+        }
     }
     else {
         u8g2_DrawStr(&u8g2, 0, SCREEN_HEIGHT/2, "Disconnected!");
         u8g2_DrawStr(&u8g2, 0, SCREEN_HEIGHT, "Connect Device!");  
     }
+
     u8g2_SendBuffer(&u8g2);
     u8g2_ClearBuffer(&u8g2);
 }
@@ -211,17 +221,17 @@ void update_display(al_event_cb_t event, al_event_cb_param_t* param) {
         break;
     
     case AL_PLAYING:
-        displayStatus = BT | PLAY;
+        displayStatus = BT | PLAY | METADATA;
         printf("AL, Playing\n");
         break;
 
     case AL_PAUSED:
-        displayStatus = BT | PAUSE;
+        displayStatus = BT | PAUSE | METADATA;
         printf("AL, Paused\n");
         break;
 
     case AL_STOPPED:
-        displayStatus = BT | STOP;
+        displayStatus = BT | STOP | METADATA;
         printf("AL, Stopped\n");
         break;
 
@@ -231,7 +241,13 @@ void update_display(al_event_cb_t event, al_event_cb_param_t* param) {
         if ((*artistText == '\0') || (*titleText == '\0')) {
             displayStatus = BT | STOP;
         }
-        x = 0;
+        else {
+            displayStatus |= METADATA;
+        }
+        artistWidth = u8g2_GetStrWidth(&u8g2, artistText);
+        titleWidth = u8g2_GetStrWidth(&u8g2, titleText);
+        artist_x = 0;
+        title_x = 0;
         printf("AL, Meta_Update\n");
         break;
     }

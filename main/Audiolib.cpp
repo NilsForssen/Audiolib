@@ -276,9 +276,11 @@ void Audiolib::a2d_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
                 _adr[i] = *(param->conn_stat.remote_bda + i);
             }
             ESP_LOGI(A2D_TAG, "Connected with adress set");
+            on_change_cb(AL_CONNECTED, NULL);
             break;
         case ESP_A2D_CONNECTION_STATE_DISCONNECTED:
             ESP_LOGI(A2D_TAG, "Disconnected");
+            on_change_cb(AL_DISCONNECTED, NULL);
             break;
         case ESP_A2D_CONNECTION_STATE_DISCONNECTING:
             ESP_LOGI(A2D_TAG, "Disconnecting");
