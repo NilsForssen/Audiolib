@@ -73,7 +73,7 @@ public:
     void stop_filter();
     
     void avrc_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *param);
-    void a2d_data_cb(const uint8_t *data, uint32_t len);
+    inline void a2d_data_cb(const uint8_t *data, uint32_t len);
     void a2d_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t* param);
 
     void pause();
@@ -110,7 +110,7 @@ public:
     Filter(filter_t type, uint16_t frequency, uint16_t sample_rate, float Q, float peakgain);
 
     template <typename in_out_type>
-    in_out_type process_signal(in_out_type in) {
+    inline in_out_type process_signal(in_out_type in) {
         float fout;
         float fin = (float) in;
         fout = fin * _b0 + _z1;

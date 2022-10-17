@@ -313,7 +313,7 @@ void Audiolib::a2d_cb(esp_a2d_cb_event_t event, esp_a2d_cb_param_t *param)
     }
 }
 
-void Audiolib::a2d_data_cb(const uint8_t *data, uint32_t len)
+inline void Audiolib::a2d_data_cb(const uint8_t *data, uint32_t len)
 {
     int16_t *data16 = (int16_t *)data;
     int temp;

@@ -106,11 +106,11 @@ Button::Button(gpio_num_t gpio_pin, btn_update_callback_t update_ntfy)
 }
 
 bool Button::getPressed() {
-    return (bool) gpio_get_level(gpio_pin);
+    return !(bool) gpio_get_level(gpio_pin);
 }
 
 bool Button::getPressedSingle() {
-    bool state = (bool) gpio_get_level(gpio_pin);
+    bool state = !(bool) gpio_get_level(gpio_pin);
     bool ret = state && !lastState;
     lastState = state;
     return ret;

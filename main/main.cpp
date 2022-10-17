@@ -17,16 +17,23 @@
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 32
 #define INPUT_INTERVAL_S 0.01
-#define DISPLAY_INTERVAL_S 0.09
+#define DISPLAY_INTERVAL_S 0.05
 
 #define POT1_CHANNEL ADC_CHANNEL_5
 #define POT2_CHANNEL ADC_CHANNEL_6
 #define POT3_CHANNEL ADC_CHANNEL_7
 #define POT4_CHANNEL ADC_CHANNEL_8
 
-#define BTN1_PIN GPIO_NUM_4
-#define BTN2_PIN GPIO_NUM_2
-#define BTN3_PIN GPIO_NUM_15
+#define BTN1_PIN GPIO_NUM_25
+#define BTN2_PIN GPIO_NUM_26
+#define BTN3_PIN GPIO_NUM_27
+
+#define DISPLAY_SDA_PIN GPIO_NUM_21
+#define DISPLAY_SCL_PIN GPIO_NUM_22
+
+#define EXT_DAC_BCLK_PIN GPIO_NUM_16
+#define EXT_DAC_WSEL_PIN GPIO_NUM_5
+#define EXT_DAC_DATA_PIN GPIO_NUM_17
 
 // -------------- Flags --------------
 enum StatusBM {
@@ -75,19 +82,19 @@ bool IRAM_ATTR display_timer_cb(void* args);
 // -------------- Object definitions --------------
 Audiolib Audiosource = Audiolib("HESA FREDRIK", &update_display);
 
-Potentiometer* pot1 = new Potentiometer(ADC_UNIT_2, POT1_CHANNEL, 70, 1010); //65/66 -> 572/573 -> 1019
+//Potentiometer* pot1 = new Potentiometer(ADC_UNIT_2, POT1_CHANNEL, 70, 1010); //65/66 -> 572/573 -> 1019
 //Potentiometer* pot2 = new Potentiometer(ADC1_CHANNEL_4, 41, 988);
 //Potentiometer* pot3 = new Potentiometer(ADC1_CHANNEL_6, 38, 988);
 //Potentiometer* pot4 = new Potentiometer(ADC1_CHANNEL_7, 29, 990);
 
-Button* btn1 = new Button(BTN1_PIN);
-Button* btn2 = new Button(BTN2_PIN);
-Button* btn3 = new Button(BTN3_PIN);
+//Button* btn1 = new Button(BTN1_PIN);
+//Button* btn2 = new Button(BTN2_PIN);
+//Button* btn3 = new Button(BTN3_PIN);
 
 CombinedChannelFilter* highshelf_filter = new CombinedChannelFilter(new Filter(HIGHSHELF, 2000, 44100, 0.8, 0), new Filter(HIGHSHELF, 2000, 44100, 0.8, 0));
 CombinedChannelFilter* lowshelf_filter = new CombinedChannelFilter(new Filter(LOWSHELF, 250, 44100, 0.8, 0), new Filter(LOWSHELF, 250, 44100, 0.8, 0));
-CombinedChannelFilter* highpass_filter = new CombinedChannelFilter(new Filter(LOWPASS, 8000, 44100, 0.75, 0), new Filter(LOWPASS, 8000, 44100, 0.75, 0));
-CombinedChannelFilter* lowpass_filter = new CombinedChannelFilter(new Filter(HIGHPASS, 60, 44100, 0.75, 0), new Filter(HIGHPASS, 60, 44100, 0.75, 0));
+//CombinedChannelFilter* highpass_filter = new CombinedChannelFilter(new Filter(LOWPASS, 8000, 44100, 0.75, 0), new Filter(LOWPASS, 8000, 44100, 0.75, 0));
+//CombinedChannelFilter* lowpass_filter = new CombinedChannelFilter(new Filter(HIGHPASS, 60, 44100, 0.75, 0), new Filter(HIGHPASS, 60, 44100, 0.75, 0));
 CombinedChannelFilter* peak_filter = new CombinedChannelFilter(new Filter(PEAK, 700, 44100, 0.8, 0), new Filter(PEAK, 700, 44100, 0.8, 0));
 // ------------------------------------------------
 
@@ -95,8 +102,8 @@ extern "C" {
     void app_main(void){
 
         // -------------- U8G2 setup --------------
-        u8g2_esp32_hal.sda = GPIO_NUM_32;
-        u8g2_esp32_hal.scl = GPIO_NUM_33;
+        u8g2_esp32_hal.sda = DISPLAY_SDA_PIN;
+        u8g2_esp32_hal.scl = DISPLAY_SCL_PIN;
         u8g2_esp32_hal_init(u8g2_esp32_hal);
         u8g2_Setup_ssd1306_i2c_128x32_univision_f(
             &u8g2,
@@ -112,12 +119,12 @@ extern "C" {
         event_queue = xQueueCreate(10, 1);
 
         // -------------- Audiosource setup --------------
-        Audiosource.set_I2S(26, 27, 25);
-        Audiosource.add_combined_filter(highpass_filter);
+        Audiosource.set_I2S(EXT_DAC_BCLK_PIN, EXT_DAC_WSEL_PIN, EXT_DAC_DATA_PIN);
+        //Audiosource.add_combined_filter(highpass_filter);
         Audiosource.add_combined_filter(lowshelf_filter);  
         Audiosource.add_combined_filter(peak_filter); 
         Audiosource.add_combined_filter(highshelf_filter);
-        Audiosource.add_combined_filter(lowpass_filter);
+        //Audiosource.add_combined_filter(lowpass_filter);
         Audiosource.start();
         // -----------------------------------------------
 
@@ -143,7 +150,7 @@ extern "C" {
             xQueueReceive(event_queue, &event, portMAX_DELAY);
             if (event & DISPLAY) {
                 draw();
-            }
+            }/*
             if (event & INPUT) {
                 if (btn1->getPressedSingle()){
                     Audiosource.previous();
@@ -159,7 +166,7 @@ extern "C" {
                 if (btn3->getPressedSingle()) {
                     Audiosource.next();
                 }
-            }
+            }*/
         }
     }
 }
@@ -180,8 +187,8 @@ void draw() {
     if ((displayStatus & PLAY) || (displayStatus & STOP) || (displayStatus & PAUSE)) {
         u8g2_DrawStr(&u8g2, 23, SCREEN_HEIGHT/2, artistText);
         u8g2_DrawStr(&u8g2, x, SCREEN_HEIGHT, titleText);
-        x += 1;
-        if (x == SCREEN_WIDTH) x = 0;
+        x -= 1;
+        if (x == -SCREEN_WIDTH) x = 0;
     }
     else {
         u8g2_DrawStr(&u8g2, 0, SCREEN_HEIGHT/2, "Disconnected!");
