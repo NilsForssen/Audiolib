@@ -83,13 +83,12 @@ int Potentiometer::get_raw() {
     return sum / SAMPLES;
 }
 
-int Potentiometer::update() {
+void Potentiometer::update() {
     prev_raw = (get_raw() + (prev_raw*(AVERAGESUM - 1))) / AVERAGESUM;
 
     if (on_change != NULL) {
         //Check threshold and maybe send update to function
     }
-    return prev_raw;
 }
 
 float Potentiometer::get_percent() {
@@ -114,4 +113,10 @@ bool Button::getPressedSingle() {
     bool ret = state && !lastState;
     lastState = state;
     return ret;
+}
+
+void Button::update() {
+    if (on_change != NULL) && getPressedSingle() {
+        (*on_change)();
+    }
 }

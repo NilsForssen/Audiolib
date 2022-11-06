@@ -11,8 +11,8 @@
 #define atten ADC_ATTEN_DB_2_5
 #define width ADC_WIDTH_BIT_12
 
-typedef void(*pot_update_callback_t)(float);
-typedef void(*btn_update_callback_t)(bool);
+typedef void(*pot_update_callback_t)();
+typedef void(*btn_update_callback_t)();
 
 
 
@@ -21,7 +21,7 @@ public:
     Potentiometer(const int, const int, pot_update_callback_t = NULL);
     Potentiometer(const adc_unit_t, const adc_channel_t, const int, const int, pot_update_callback_t = NULL);
     int get_raw();
-    int update();
+    void update();
     float get_percent();
 
 private:
@@ -43,6 +43,7 @@ public:
     Button(gpio_num_t, btn_update_callback_t = NULL);
     bool getPressed();
     bool getPressedSingle();
+    void update();
     btn_update_callback_t on_change;
 private:
     bool lastState = false;

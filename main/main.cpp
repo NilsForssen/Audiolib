@@ -81,19 +81,28 @@ void update_display(al_event_cb_t, al_event_cb_param_t*);
 void IRAM_ATTR draw();
 bool IRAM_ATTR input_timer_cb(void* args);
 bool IRAM_ATTR display_timer_cb(void* args);
+
+pot_update_callback_t pot1_update_cb(void);
+pot_update_callback_t pot2_update_cb(void);
+pot_update_callback_t pot3_update_cb(void);
+pot_update_callback_t pot4_update_cb(void);
+
+btn_update_callback_t btn1_update_cb(void);
+btn_update_callback_t btn2_update_cb(void);
+btn_update_callback_t btn3_update_cb(void);
 // --------------------------------------------------
 
 // -------------- Object definitions --------------
 Audiolib Audiosource = Audiolib("HESA PETTER", &update_display);
 
-//Potentiometer* pot1 = new Potentiometer(ADC_UNIT_2, POT1_CHANNEL, 70, 1010); //65/66 -> 572/573 -> 1019
-//Potentiometer* pot2 = new Potentiometer(ADC1_CHANNEL_4, 41, 988);
-//Potentiometer* pot3 = new Potentiometer(ADC1_CHANNEL_6, 38, 988);
-//Potentiometer* pot4 = new Potentiometer(ADC1_CHANNEL_7, 29, 990);
+Potentiometer* pot1 = new Potentiometer(ADC1_CHANNEL0, 70, 1010, &pot1_update_cb);
+Potentiometer* pot2 = new Potentiometer(ADC1_CHANNEL_4, 41, 988, &pot2_update_cb);
+Potentiometer* pot3 = new Potentiometer(ADC1_CHANNEL_6, 38, 988, &pot3_update_cb);
+Potentiometer* pot4 = new Potentiometer(ADC1_CHANNEL_7, 29, 990, &pot4_update_cb);
 
-//Button* btn1 = new Button(BTN1_PIN);
-//Button* btn2 = new Button(BTN2_PIN);
-//Button* btn3 = new Button(BTN3_PIN);
+Button* btn1 = new Button(BTN1_PIN, &btn1_update_cb);
+Button* btn2 = new Button(BTN2_PIN, &btn2_update_cb);
+Button* btn3 = new Button(BTN3_PIN, &btn3_update_cb);
 
 CombinedChannelFilter* highshelf_filter = new CombinedChannelFilter(new Filter(HIGHSHELF, 2000, 44100, 0.8, 0), new Filter(HIGHSHELF, 2000, 44100, 0.8, 0));
 CombinedChannelFilter* lowshelf_filter = new CombinedChannelFilter(new Filter(LOWSHELF, 250, 44100, 0.8, 0), new Filter(LOWSHELF, 250, 44100, 0.8, 0));
@@ -154,8 +163,18 @@ extern "C" {
             xQueueReceive(event_queue, &event, portMAX_DELAY);
             if (event & DISPLAY) {
                 draw();
-            }/*
+            }
             if (event & INPUT) {
+
+                pot1->update();
+                pot2->update();
+                pot3->update();
+                pot4->update();
+
+                btn1->update();
+                btn2->update();
+                btn3->update();
+
                 if (btn1->getPressedSingle()){
                     Audiosource.previous();
                 }
@@ -170,7 +189,7 @@ extern "C" {
                 if (btn3->getPressedSingle()) {
                     Audiosource.next();
                 }
-            }*/
+            }
         }
     }
 }
@@ -265,4 +284,33 @@ bool display_timer_cb(void* args) {
     BaseType_t high_task_awoken = pdFALSE;
     xQueueSendFromISR(event_queue, &msg, &high_task_awoken);
     return high_task_awoken == pdTRUE;
+}
+
+pot_update_callback_t pot1_update_cb() {
+    printf("Pot 1 changed\n");
+}
+pot_update_callback_t pot2_update_cb() {
+    printf("Pot 2 changed\n");
+}
+pot_update_callback_t pot3_update_cb() {
+    printf("Pot 3 changed\n");
+}
+pot_update_callback_t pot4_update_cb() {
+    printf("Pot 4 changed\n");
+}
+
+
+btn_update_callback_t btn1_update_cb() {
+    Audiosource.previous();
+}
+btn_update_callback_t btn2_update_cb() {
+    if (displayStatus & PLAY) {
+        Audiosource.pause();
+    }
+    else if (displayStatus & (PAUSE | STOP)){
+        Audiosource.play();
+    }
+}
+btn_update_callback_t btn3_update_cb() {
+    Audiosource.next();
 }
