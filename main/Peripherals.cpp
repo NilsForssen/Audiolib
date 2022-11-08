@@ -83,17 +83,20 @@ int Potentiometer::get_raw() {
     return sum / SAMPLES;
 }
 
-void Potentiometer::update() {
-    prev_raw = (get_raw() + (prev_raw*(AVERAGESUM - 1))) / AVERAGESUM;
-
-    if (on_change != NULL) {
-        //Check threshold and maybe send update to function
-    }
-}
-
 float Potentiometer::get_percent() {
     int raw = get_raw();
     return ((float)raw / (4096)) * 100;
+}
+
+void Potentiometer::update() {
+    uint32_t current = get_raw();
+
+    if (on_change != NULL) {
+        //Check threshold and maybe send update to function
+        if (abs(current - prev_raw) > DIFF_THRESHOLD) {
+            (*on_change)();
+        }
+    }
 }
 
 Button::Button(gpio_num_t gpio_pin, btn_update_callback_t update_ntfy)
@@ -116,7 +119,7 @@ bool Button::getPressedSingle() {
 }
 
 void Button::update() {
-    if (on_change != NULL) && getPressedSingle() {
+    if ((on_change != NULL) && getPressedSingle()) {
         (*on_change)();
     }
 }

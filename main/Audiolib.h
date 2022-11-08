@@ -97,7 +97,7 @@ private:
     bool _filtering = true;
     const char* _devname;
     const i2s_port_t i2s_num = I2S_NUM_0;
-    const int _sample_rate = 44100;
+    const uint32_t _sample_rate = 44100;
     uint8_t _adr[ESP_BD_ADDR_LEN];
     std::vector<Filter*> _left;
     std::vector<Filter*> _right;

@@ -6,13 +6,13 @@
 
 #define SAMPLES 64
 #define VREF 1100
-#define AVERAGESUM 5
+#define DIFF_THRESHOLD 10
 
 #define atten ADC_ATTEN_DB_2_5
 #define width ADC_WIDTH_BIT_12
 
-typedef void(*pot_update_callback_t)();
-typedef void(*btn_update_callback_t)();
+typedef void(*pot_update_callback_t)(void);
+typedef void(*btn_update_callback_t)(void);
 
 
 
@@ -36,7 +36,6 @@ private:
     static void check_efuse();
     static void print_char_val_type(esp_adc_cal_value_t);
 };
-
 
 class Button {
 public:
