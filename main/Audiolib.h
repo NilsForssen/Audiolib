@@ -119,6 +119,9 @@ public:
         return (in_out_type) fout * volume;
     }
     void update(float peakgain);
+    void change_volume(float v) {
+        volume = v;
+    }
 
 private:
     uint16_t _sample_rate;
@@ -133,6 +136,10 @@ private:
 struct CombinedChannelFilter {
     CombinedChannelFilter(Filter* left_filter, Filter* right_filter);
     void update(float gain);
+    void change_volume(float v) {
+        left->change_volume(v);
+        right->change_volume(v);
+    }
     Filter* left;
     Filter* right;
 };

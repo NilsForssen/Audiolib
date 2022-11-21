@@ -8,15 +8,14 @@ gpio_config_t btn_config = {
     .intr_type = GPIO_INTR_ANYEDGE
 };
 
-Potentiometer::Potentiometer(const int min, const int max, pot_update_callback_t update_ntfy)
-    : Potentiometer(ADC_UNIT_1, ADC_CHANNEL_1, min, max, update_ntfy) {}
+Potentiometer::Potentiometer(pot_update_callback_t update_ntfy)
+    : Potentiometer(ADC_UNIT_1, ADC_CHANNEL_1, 0, update_ntfy) {}
 
-Potentiometer::Potentiometer(const adc_unit_t unit, const adc_channel_t channel, const int min, const int max, pot_update_callback_t update_ntfy) 
+Potentiometer::Potentiometer(const adc_unit_t unit, const adc_channel_t channel, float offset_fact, pot_update_callback_t update_ntfy) 
     : adc_unit(unit), 
     adc_channel(channel), 
-    min_raw(min), 
-    max_raw(max),
     on_change(update_ntfy),
+    offset_fact(offset_fact),
     prev_raw(0) {
 
     static bool adc_first_init = init_adc(unit, channel);
@@ -90,13 +89,21 @@ float Potentiometer::get_percent() {
 
 void Potentiometer::update() {
     uint32_t current = get_raw();
-
     if (on_change != NULL) {
         //Check threshold and maybe send update to function
-        if (abs(current - prev_raw) > DIFF_THRESHOLD) {
-            (*on_change)();
+        if (abs((int) current - prev_raw) > DIFF_THRESHOLD || ((current % 4095 == 0) && (prev_raw % 4095 != 0))) {
+            float percent = (((float)current / (4095)) * 100) * offset_fact;
+            if (percent > 100.0) {
+                percent = 100.0;
+            }
+            else if (percent < 0) {
+                percent = 0;
+            }
+            (*on_change)(percent);
+            prev_raw = current;
         }
     }
+    
 }
 
 Button::Button(gpio_num_t gpio_pin, btn_update_callback_t update_ntfy)
