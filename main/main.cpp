@@ -258,22 +258,6 @@ void update_display(al_event_cb_t event, al_event_cb_param_t *param)
     }
 }
 
-bool input_timer_cb(void *args)
-{
-    int8_t msg = INPUT;
-    BaseType_t high_task_awoken = pdFALSE;
-    xQueueSendFromISR(event_queue, &msg, &high_task_awoken);
-    return high_task_awoken == pdTRUE;
-}
-
-bool display_timer_cb(void *args)
-{
-    int8_t msg = DISPLAY;
-    BaseType_t high_task_awoken = pdFALSE;
-    xQueueSendFromISR(event_queue, &msg, &high_task_awoken);
-    return high_task_awoken == pdTRUE;
-}
-
 void pot_volume_update_cb(float val)
 {
     printf("Volume changed %.2f\n", val);

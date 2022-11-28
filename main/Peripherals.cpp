@@ -1,13 +1,5 @@
 #include "Peripherals.h"
 
-gpio_config_t btn_config = {
-    .pin_bit_mask = (uint64_t) 0,
-    .mode = GPIO_MODE_INPUT,
-    .pull_up_en = GPIO_PULLUP_DISABLE,
-    .pull_down_en = GPIO_PULLDOWN_ENABLE,
-    .intr_type = GPIO_INTR_ANYEDGE
-};
-
 Potentiometer::Potentiometer(pot_update_callback_t update_ntfy)
     : Potentiometer(ADC_UNIT_1, ADC_CHANNEL_1, 0, update_ntfy) {}
 
@@ -18,64 +10,18 @@ Potentiometer::Potentiometer(const adc_unit_t unit, const adc_channel_t channel,
     offset_fact(offset_fact),
     prev_raw(0) {
 
-    static bool adc_first_init = init_adc(unit, channel);
-}
-
-bool Potentiometer::init_adc(const adc_unit_t unit, const adc_channel_t channel) {
-    check_efuse();
-    //Configure ADC
-    if (unit == ADC_UNIT_1) {
-        adc1_config_width(width);
-        adc1_config_channel_atten((adc1_channel_t)channel, atten);
-    } else {
-        adc2_config_channel_atten((adc2_channel_t)channel, atten);
-    }
-    
-    //Characterize ADC
-    esp_adc_cal_characteristics_t* adc_chars = (esp_adc_cal_characteristics_t*) calloc(1, sizeof(esp_adc_cal_characteristics_t));
-    esp_adc_cal_value_t val_type = esp_adc_cal_characterize(unit, atten, width, VREF, adc_chars);
-    print_char_val_type(val_type);
-    return true;
-}
-
-void Potentiometer::check_efuse() {
-    //Check if TP is burned into eFuse
-    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_TP) == ESP_OK) {
-        printf("eFuse Two Point: Supported\n");
-    } else {
-        printf("eFuse Two Point: NOT supported\n");
-    }
-    //Check Vref is burned into eFuse
-    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_VREF) == ESP_OK) {
-        printf("eFuse Vref: Supported\n");
-    } else {
-        printf("eFuse Vref: NOT supported\n");
-    }
-    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_TP) == ESP_OK) {
-        printf("eFuse Two Point: Supported\n");
-    } else {
-        printf("Cannot retrieve eFuse Two Point calibration values. Default calibration values will be used.\n");
-    }
-}
-
-void Potentiometer::print_char_val_type(esp_adc_cal_value_t val_type) {
-    if (val_type == ESP_ADC_CAL_VAL_EFUSE_TP) {
-        printf("Characterized using Two Point Value\n");
-    } else if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) {
-        printf("Characterized using eFuse Vref\n");
-    } else {
-        printf("Characterized using Default Vref\n");
-    }
+    init_adc(unit, channel);
 }
 
 int Potentiometer::get_raw() {
-    uint32_t sum = 0;
+    int sum = 0;
     for (int i = 0; i < SAMPLES; i++) {
         if (adc_unit == ADC_UNIT_1) {
             sum += adc1_get_raw((adc1_channel_t)adc_channel);
-        }else {
+        }
+        else {
             int raw;
-            adc2_get_raw((adc2_channel_t)adc_channel, width, &raw);
+            adc2_get_raw((adc2_channel_t)adc_channel, WIDTH, &raw);
             sum += raw;
         }
     }
@@ -88,7 +34,7 @@ float Potentiometer::get_percent() {
 }
 
 void Potentiometer::update() {
-    uint32_t current = get_raw();
+    int current = get_raw();
     if (on_change != NULL) {
         //Check threshold and maybe send update to function
         if (abs((int) current - prev_raw) > DIFF_THRESHOLD || ((current % 4095 == 0) && (prev_raw % 4095 != 0))) {
@@ -103,13 +49,18 @@ void Potentiometer::update() {
             prev_raw = current;
         }
     }
-    
 }
 
 Button::Button(gpio_num_t gpio_pin, btn_update_callback_t update_ntfy)
  : on_change(update_ntfy),
  gpio_pin(gpio_pin) {
-    gpio_config_t config = btn_config;
+    gpio_config_t config = {
+        .pin_bit_mask = (uint64_t) 0,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,
+        .intr_type = GPIO_INTR_ANYEDGE
+    };
     config.pin_bit_mask = (1 << gpio_pin);
     gpio_config(&config);
 }
@@ -130,3 +81,34 @@ void Button::update() {
         (*on_change)();
     }
 }
+
+BatteryMonitor::BatteryMonitor(const adc_unit_t unit, const adc_channel_t channel, float zero)
+    : adc_unit(unit),
+    adc_channel(channel), 
+    zero(zero) {
+
+    init_adc(unit, channel);
+}
+
+int BatteryMonitor::get_raw() {
+    int sum = 0;
+    for (int i = 0; i < SAMPLES; i++) {
+        if (adc_unit == ADC_UNIT_1) {
+            sum += adc1_get_raw((adc1_channel_t)adc_channel);
+        }
+        else {
+            int raw;
+            adc2_get_raw((adc2_channel_t)adc_channel, WIDTH, &raw);
+            sum += raw;
+        }
+    }
+    return sum / SAMPLES;
+}
+
+float BatteryMonitor::get_percentage() {
+    int current = get_raw();
+    // Do some zeroing here
+    return (((float)current / (4095)) * 100);
+}
+
+
