@@ -1,12 +1,14 @@
-#include "driver/adc.h"
-#include "esp_adc_cal.h"
-
 #ifndef Peripherals_H
 #define Peripherals_H
 
+#include "driver/adc.h"
+#include "esp_adc_cal.h"
+
+
+
 #define SAMPLES 64
 #define VREF 1100
-#define DIFF_THRESHOLD 10
+#define DIFF_THRESHOLD 50
 
 #define ATTEN ADC_ATTEN_DB_11
 #define WIDTH ADC_WIDTH_BIT_12
@@ -64,9 +66,6 @@ static bool init_adc(const adc_unit_t unit, const adc_channel_t channel) {
     return true;
 }
 
-
-
-
 class Potentiometer {
 public:
     Potentiometer(pot_update_callback_t = NULL);
@@ -92,6 +91,15 @@ public:
     btn_update_callback_t on_change;
 private:
     bool lastState = false;
+    gpio_num_t gpio_pin;
+};
+
+class TogglePIN {
+public:
+    TogglePIN(gpio_num_t);
+    bool get();
+    void set(bool);
+private:
     gpio_num_t gpio_pin;
 };
 

@@ -82,6 +82,27 @@ void Button::update() {
     }
 }
 
+TogglePIN::TogglePIN(gpio_num_t gpio_pin) : gpio_pin(gpio_pin) {
+    gpio_config_t config = {
+        .pin_bit_mask = (uint64_t) 0,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    config.pin_bit_mask = (1 << gpio_pin);
+    gpio_config(&config);
+}
+
+bool TogglePIN::get() {
+    return gpio_get_level(gpio_pin);
+}
+
+void TogglePIN::set(bool level) {
+    gpio_set_level(gpio_pin, level);
+}
+
+
 BatteryMonitor::BatteryMonitor(const adc_unit_t unit, const adc_channel_t channel, float zero)
     : adc_unit(unit),
     adc_channel(channel), 
